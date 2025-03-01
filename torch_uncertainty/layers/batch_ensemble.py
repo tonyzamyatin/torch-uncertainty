@@ -125,6 +125,7 @@ class BatchLinear(nn.Module):
         )
         extra = batch_size % self.num_estimators
 
+        # TODO: minor bug: all extra examples are assigned to the first predictor (but it's not a big deal)
         r_group = torch.repeat_interleave(self.r_group, examples_per_estimator, dim=0)
         r_group = torch.cat([r_group, r_group[:extra]], dim=0)  # .unsqueeze(-1).unsqueeze(-1)
         s_group = torch.repeat_interleave(self.s_group, examples_per_estimator, dim=0)

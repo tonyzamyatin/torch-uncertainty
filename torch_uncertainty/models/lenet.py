@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from torch_uncertainty.layers.batch_ensemble import BatchConv2d, BatchLinear
 from torch_uncertainty.layers.bayesian import BayesConv2d, BayesLinear
 from torch_uncertainty.layers.mc_batch_norm import MCBatchNorm2d
 from torch_uncertainty.layers.packed import PackedConv2d, PackedLinear
@@ -20,7 +21,7 @@ class _LeNet(nn.Module):
         num_classes: int,
         linear_layer: type[nn.Module],
         conv2d_layer: type[nn.Module],
-        layer_args: dict,
+        layer_args: dict,  # pass args specfic to method shared across all layers, e.g. `num_estimators`
         activation: Callable,
         norm: type[nn.Module],
         groups: int,
@@ -112,6 +113,31 @@ def lenet(
         linear_layer=nn.Linear,
         conv2d_layer=nn.Conv2d,
         layer_args={},
+        activation=activation,
+        norm=norm,
+        groups=groups,
+        dropout_rate=dropout_rate,
+    )
+
+
+def batchensemble_lenet(
+    in_channels: int,
+    num_classes: int,
+    num_estimators: int = 4,
+    activation: Callable = F.relu,
+    norm: type[nn.Module] = nn.BatchNorm2d,
+    groups: int = 1,
+    dropout_rate: float = 0.0,
+) -> _LeNet:
+    return _lenet(
+        stochastic=False,
+        in_channels=in_channels,
+        num_classes=num_classes,
+        linear_layer=BatchLinear,
+        conv2d_layer=BatchConv2d,
+        layer_args={
+            "num_estimators": num_estimators,
+        },
         activation=activation,
         norm=norm,
         groups=groups,
