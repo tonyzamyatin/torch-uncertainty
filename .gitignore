@@ -1,6 +1,5 @@
 # Custom
 .vscode/
-.idea/
 data/
 logs/
 lightning_logs/
@@ -12,7 +11,7 @@ docs/source/sg_execution_times.rst
 **/*.ckpt
 **/*.out
 **/*.csv
-pyrightconfig.json
+pyrightconfig.jsonc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
