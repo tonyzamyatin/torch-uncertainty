@@ -28,7 +28,8 @@ RUN pip install --no-cache-dir ".[all]"
 RUN echo "source /opt/conda/bin/activate" >> /root/.bashrc
 
 # Customize shell prompt (optional)
-RUN echo 'force_color_prompt=yes' >> /root/.bashrc && \
+RUN if [ ! -z "$USE_COMPACT_SHELL_PROMPT" ] && [ "$USE_COMPACT_SHELL_PROMPT" = "true" ]; then \
+    echo 'force_color_prompt=yes' >> /root/.bashrc && \
     # Blue working directory, no username, and no hostname, with $ at the end
     echo 'PS1="\[\033[01;34m\]\W\[\033[00m\]\$ "' >> /root/.bashrc && \
     # Colorize ls, grep, fgrep, and egrep
@@ -40,7 +41,8 @@ RUN echo 'force_color_prompt=yes' >> /root/.bashrc && \
     echo '    alias egrep="egrep --color=auto"' >> /root/.bashrc && \
     # Automatically change to workspace directory when opening a new terminal
     echo '    cd /workspace' >> /root/.bashrc && \
-    echo 'fi' >> /root/.bashrc
+    echo 'fi' >> /root/.bashrc \
+    fi;
 
 # Configure SSH server
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
