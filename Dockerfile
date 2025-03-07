@@ -5,11 +5,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8
 
-# Install Git, OpenSSH Server, and OpenGL (PyTorch's base image already includes Conda and Pip)
+# Install Git, OpenSSH Server, OpenGL and ImageMagic Wand (PyTorch's base image already includes Conda and Pip)
 RUN apt-get update && apt-get install -y \
     git \
     openssh-server \
     libgl1 \
+    # Wand is required for the corruption transformations inspired by Hendrycks et al. (2019)
+    # TODO: Delete this dependey as soon as the corruption transformations are implemented in this repository!
+    libmagickwand-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
