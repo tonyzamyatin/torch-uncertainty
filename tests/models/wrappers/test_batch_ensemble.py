@@ -17,6 +17,10 @@ class SimpleModel(nn.Module):
     def forward(self, x):
         return self.fc(x)
 
+    def reset_parameters(self):
+        self.r_group.data.uniform_(-0.1, 0.1)
+        self.s_group.data.uniform_(-0.1, 0.1)
+
 
 # Test the BatchEnsemble wrapper
 def test_batch_ensemble():
@@ -30,6 +34,21 @@ def test_batch_ensemble():
     x = torch.randn(2, in_features)  # Batch size of 2
     logits = wrapped_model(x)
     assert logits.shape == (2 * num_estimators, out_features)
+
+    # Test freeze_shared_parameters
+    wrapped_model.freeze_shared_parameters()
+    for name, param in wrapped_model.model.named_parameters():
+        if "r_group" not in name and "s_group" not in name and "bias" not in name:
+            assert not param.requires_grad
+        else:
+            assert param.requires_grad
+
+    # Test reset_rank1_scaling_factors
+    wrapped_model.reset_rank1_scaling_factors()
+    for module in wrapped_model.model.modules():
+        if hasattr(module, "r_group") and hasattr(module, "s_group"):
+            assert torch.all(module.r_group.data >= -0.1) and torch.all(module.r_group.data <= 0.1)
+            assert torch.all(module.s_group.data >= -0.1) and torch.all(module.s_group.data <= 0.1)
 
 
 if __name__ == "__main__":
