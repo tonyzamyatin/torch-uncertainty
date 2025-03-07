@@ -29,6 +29,23 @@ class BatchEnsemble(nn.Module):
         self.model = model
         self.num_estimators = num_estimators
 
+    def freeze_shared_parameters(self):
+        """Freezes the shared parameters of the model (also called slow weights)."""
+        for name, param in self.model.named_parameters():
+            if "r_group" not in name and "s_group" not in name and "bias" not in name:
+                param.requires_grad = False
+
+    def unfreeze_shared_parameters(self):
+        """Unfreezes the shared parameters of the model (also called slow weights)."""
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+    def reset_rank1_scaling_factors(self):
+        """Reinitializes the rank-1 scaling factors (also called fast weights)."""
+        for module in self.model.modules():
+            if hasattr(module, "r_group") and hasattr(module, "s_group"):
+                module.reset_parameters()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Repeats the input batch and passes it through the model."""
         repeat_shape = [self.num_estimators] + [1] * (x.dim() - 1)
