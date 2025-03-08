@@ -4,8 +4,8 @@ from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from torch_uncertainty.models.wrappers.batch_ensemble import BatchEnsemble
 
 
-class BatchEnsembleLatePhaseTraining(pl.Callback):
-    """Late-phase training for BatchEnsembles.
+class BatchEnsembleLatePhaseRetraining(pl.Callback):
+    """Late-phase retraining for BatchEnsembles.
     This callback:
     1. Trains all parameters until the :arg:`start_epoch` is reached.
     2. Freezes the shared weight matrix and resets rank-1 scaling factors.

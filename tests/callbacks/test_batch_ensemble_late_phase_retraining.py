@@ -3,7 +3,9 @@ from unittest.mock import MagicMock
 import pytest
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from torch_uncertainty.callbacks.batch_ensemble import BatchEnsembleLatePhaseTraining
+from torch_uncertainty.callbacks.batch_ensemble_late_phase_retraining import (
+    BatchEnsembleLatePhaseRetraining,
+)
 from torch_uncertainty.models.wrappers.batch_ensemble import BatchEnsemble
 
 
@@ -14,7 +16,7 @@ def test_on_setup_with_invalid_model():
     pl_module.model = MagicMock()
 
     # Initialize callback
-    callback = BatchEnsembleLatePhaseTraining(start_epoch=2)
+    callback = BatchEnsembleLatePhaseRetraining(start_epoch=2)
 
     # Test on_setup with invalid model
     with pytest.raises(TypeError):
@@ -28,7 +30,7 @@ def test_on_setup_with_valid_model():
     pl_module.model = MagicMock(spec=BatchEnsemble)
 
     # Initialize callback
-    callback = BatchEnsembleLatePhaseTraining(start_epoch=2)
+    callback = BatchEnsembleLatePhaseRetraining(start_epoch=2)
 
     # Test on_setup with valid model
     callback.on_setup(trainer, pl_module)
@@ -37,7 +39,7 @@ def test_on_setup_with_valid_model():
 def test_init_with_invalid_end_epoch():
     # Test with end_epoch <= start_epoch
     with pytest.raises(MisconfigurationException):
-        BatchEnsembleLatePhaseTraining(start_epoch=2, end_epoch=2)
+        BatchEnsembleLatePhaseRetraining(start_epoch=2, end_epoch=2)
 
 
 def test_on_train_epoch_start():
@@ -47,7 +49,7 @@ def test_on_train_epoch_start():
     pl_module.model = MagicMock(spec=BatchEnsemble)
 
     # Initialize callback with start_epoch
-    callback = BatchEnsembleLatePhaseTraining(start_epoch=2, end_epoch=4)
+    callback = BatchEnsembleLatePhaseRetraining(start_epoch=2, end_epoch=4)
 
     # Assert that reset_rank1_scaling_factors and freeze_shared_parameters are not called before start_epoch
     trainer.current_epoch = 1
