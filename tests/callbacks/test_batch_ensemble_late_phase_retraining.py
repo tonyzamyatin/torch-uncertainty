@@ -20,7 +20,7 @@ def test_on_setup_with_invalid_model():
 
     # Test on_setup with invalid model
     with pytest.raises(TypeError):
-        callback.on_setup(trainer, pl_module)
+        callback.setup(trainer, pl_module)
 
 
 def test_on_setup_with_valid_model():
@@ -33,7 +33,7 @@ def test_on_setup_with_valid_model():
     callback = BatchEnsembleLatePhaseRetraining(start_epoch=2)
 
     # Test on_setup with valid model
-    callback.on_setup(trainer, pl_module)
+    callback.setup(trainer, pl_module)
 
 
 def test_init_with_invalid_end_epoch():

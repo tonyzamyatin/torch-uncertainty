@@ -1,5 +1,6 @@
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from typing_extensions import override
 
 from torch_uncertainty.models.wrappers.batch_ensemble import BatchEnsemble
 
@@ -32,16 +33,17 @@ class BatchEnsembleLatePhaseRetraining(pl.Callback):
         self.start_epoch = start_epoch
         self.end_epoch = end_epoch
 
-    def on_setup(self, trainer, pl_module) -> None:
+    @override
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
         if not hasattr(pl_module, "model"):
             raise AttributeError("The provided LightningModule does not have a `model` attribute.")
-
         if not isinstance(pl_module.model, BatchEnsemble):
             raise TypeError(
                 "The `model` attribute of LightningModule must be an instance of BatchEnsemble."
             )
 
-    def on_train_epoch_start(self, trainer, pl_module) -> None:
+    @override
+    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         if trainer.current_epoch == self.start_epoch:
             pl_module.model.reset_rank1_scaling_factors()
             pl_module.model.freeze_shared_parameters()
