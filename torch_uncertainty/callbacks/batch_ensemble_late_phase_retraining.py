@@ -18,7 +18,7 @@ class BatchEnsembleLatePhaseRetraining(pl.Callback):
         end_epoch (int, optional): Epoch to unfreeze shared parameters. Defaults to None.
 
     Raises:
-        MisconfigurationException: If :arg:`end_epoch` is not greater than :arg:`start_epoch`.
+        MisconfigurationException: If :arg:`end_epoch` is smaller than :arg:`start_epoch`.
         TypeError: If the model is not an instance of :class:`BatchEnsemble` wrapper.
     """
 
@@ -28,8 +28,10 @@ class BatchEnsembleLatePhaseRetraining(pl.Callback):
         end_epoch: int | None = None,
     ) -> None:
         super().__init__()
-        if end_epoch and end_epoch <= start_epoch:
-            raise MisconfigurationException("`end_epoch` must be greater than `start_epoch`.")
+        if end_epoch and end_epoch < start_epoch:
+            raise MisconfigurationException(
+                "`end_epoch` must be greater than or equal to `start_epoch`."
+            )
         self.start_epoch = start_epoch
         self.end_epoch = end_epoch
 
