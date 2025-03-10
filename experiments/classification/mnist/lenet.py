@@ -1,3 +1,4 @@
+import lightning.pytorch as pl
 import torch
 from lightning.pytorch.cli import LightningArgumentParser
 
@@ -18,6 +19,8 @@ def cli_main() -> MNISTCLI:
 
 if __name__ == "__main__":
     torch.set_float32_matmul_precision("medium")
+    pl.seed_everything(42)
+
     cli = cli_main()
     if (
         (not cli.trainer.fast_dev_run)
