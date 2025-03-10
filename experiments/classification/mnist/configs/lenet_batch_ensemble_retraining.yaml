@@ -2,7 +2,7 @@
 seed_everything: false
 eval_after_fit: true
 trainer:
-  fast_dev_run: true
+  fast_dev_run: false
   accelerator: gpu
   devices: 1
   precision: 16-mixed
@@ -29,7 +29,8 @@ trainer:
       check_finite: true
   - class_path: torch_uncertainty.callbacks.BatchEnsembleLatePhaseRetraining
     init_args:
-      start_epoch: 8
+      start_epoch: 2
+      end_epoch: 6
 
 model:  
   # ClassificationRoutine
