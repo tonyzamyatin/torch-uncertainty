@@ -819,14 +819,10 @@ class Elastic(TUCorruption):
         dx = (
             (
                 gaussian_blur2d(
-                    torch.as_tensor(self.rng.uniform(-1, 1, size=shape[:2]))
-                    .unsqueeze(0)
-                    .unsqueeze(0),
+                    torch.as_tensor(self.rng.uniform(-1, 1, size=(1, 1, *shape[:2]))),
                     kernel_size=ks,
                     sigma=(sigma, sigma),
-                )
-                .squeeze(0)
-                .squeeze(0)
+                ).squeeze(0, 1)
                 * self.mix[0]
                 * shape_size[0]
             )
@@ -836,14 +832,10 @@ class Elastic(TUCorruption):
         dy = (
             (
                 gaussian_blur2d(
-                    torch.as_tensor(self.rng.uniform(-1, 1, size=shape[:2]))
-                    .unsqueeze(0)
-                    .unsqueeze(0),
+                    torch.as_tensor(self.rng.uniform(-1, 1, size=(1, 1, *shape[:2]))),
                     kernel_size=ks,
                     sigma=(sigma, sigma),
-                )
-                .squeeze(0)
-                .squeeze(0)
+                ).squeeze(0, 1)
                 * self.mix[0]
                 * shape_size[0]
             )
