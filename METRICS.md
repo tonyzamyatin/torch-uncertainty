@@ -2,8 +2,6 @@
 
 This README provides definitions, formulas, and use cases for various uncertainty and evaluation metrics used in classification models, especially in ensemble and uncertainty-aware learning.
 
----
-
 ## **1. Model Performance Metrics**
 These metrics evaluate the overall predictive performance of the model, including accuracy and ranking-based classification performance.
 
@@ -17,6 +15,23 @@ $$\text{Accuracy} = \frac{\text{Correct Predictions}}{\text{Total Samples}}$$
 - **Higher accuracy** means better classification performance.
 - **Does not measure uncertainty or reliability** of predictions.
 
+
+### Entropy (`cls/Entropy`)
+Shannon entropy is a measure of the uncertainty or unpredictability in a probability distribution. 
+It quantifies the amount of information required to describe a random variable.
+
+For a classification task, the Shannon entropy is defined as
+$$ H(y|x) = -\sum_{c} p(y = c) \log p(y = c) $$
+where: 
+- $p(y)$ is the probability distribution over the labels $y$ which the classifier outputs
+- $p(y = c)$ is the probability that the example $x$ has label/class $c$.
+
+**Interpretation:**
+- **Higher entropy**: When the probability distribution is uniform (all outcomes are equally likely), entropy is maximized. This represents maximum uncertainty.
+- **Lower entropy**: When one outcome is highly probable while others are rare, entropy is lower, indicating less uncertainty.
+- **Zero entropy**: If a random variable has only one possible outcome, the entropy is zero since no uncertainty exists.
+
+
 ### **Area Under the Precision-Recall Curve (`AUPR`)**
 AUPR is the area under the **precision-recall curve**, which plots **precision (positive predictive value)** against **recall (true positive rate)** across different classification thresholds.
 
@@ -29,6 +44,7 @@ where:
 - $\text{Recall} = \frac{TP}{TP + FN}$
 
 **Interpretation:** Higher AUPR is better, indicating that the model maintains good precision and recall across thresholds.
+
 
 ### **Area Under the Receiver Operating Characteristic Curve (`AUROC`)**
 AUROC measures the model’s ability to distinguish between positive and negative classes across all classification thresholds.
@@ -55,8 +71,6 @@ $$ \text{FPR@95TPR} = \min \left\{ \text{FPR} \, | \, \text{TPR} = 0.95 \right\}
 - Lower FPR95 is better, meaning the model produces fewer false positives at a high recall threshold.
 - This metric is particularly useful for OOD evalutation.
 
----
-
 ## **2. Calibration Metrics**
 These metrics measure how well the model's predicted probabilities align with true correctness likelihood.
 
@@ -66,7 +80,7 @@ Measures the mean squared difference between predicted probabilities and actual 
 $$ \text{Brier Score} = \frac{1}{N} \sum_{i=1}^{N} \sum_{c=1}^{C} (p_{i,c} - y_{i,c})^2 $$
 
 where:
-- $p_{i,c}$ is the predicted probability for class $$ c $$.
+- $p_{i,c}$ is the predicted probability for class $c$.
 - $y_{i,c}$ is the true one-hot encoded label.
 
 #### **Intuition:**
@@ -93,8 +107,6 @@ where:
 - $\text{conf}(B_m)$ is the average confidence of predictions in bin $B_m$.
 
 **Interpretation:** Lower ECE means the model’s confidence better aligns with reality.
-
----
 
 ## **3. Selective Classification Metrics**
 These metrics measure how well a model can balance coverage and risk when choosing to make predictions selectively.
@@ -167,8 +179,6 @@ Measures the fraction of samples retained at a **fixed 5% error rate**.
 Measures the error rate when retaining **80% of samples**.
 **Interpretation:** Lower risk is better at high coverage.
 
----
-
 ## **4. Ensemble-Based Uncertainty Metrics**
 These metrics quantify uncertainty in ensemble models by measuring disagreement and confidence dispersion.
 
@@ -186,32 +196,36 @@ where:
 - **Low disagreement** means ensemble members confidently predict the same class.
 
 ### **Ensemble Entropy (Predictive Entropy) (`ens/Entropy`)**
-Measures the entropy of the average predictive distribution of the ensemble.
-
-$$ H(y|x) = -\sum_{c} p(y = c) \log p(y = c) $$
-
+Ensemble entropy quantifies the average uncertainty of individual models in an ensemble.
+Instead of instead of aggregating the probabilities first (as in `Entropy`), it calculates the entropy for each estimator's predictions and then averages these entropies.
+$$
+\begin{align*}
+H_{ens}(y\mid x) &= \frac{1}{M} \sum_{m=1}^{M} H_m(y\mid x) \\
+&= \frac{1}{M} \sum_{m=1}^{M} \left( -\sum_{c} p_{m}(y = c) \log(p_{m}(y = c)) \right) 
+\end{align*}
+$$
 where:
-- $p(y = c) = \frac{1}{M} \sum_{i=1}^{M} p_i(y = c)$ is the mean ensemble prediction.
+- $M$ is the number of estimators in the ensemble,
+- $H_m(y\mid x)$ is the entropy of estimator $m$,
+- $p_{m}(y = c)$ is the predicted probability for class $c$ from estimator $m$.
 
 #### **Intepretation** 
-- **High entropy** means that the ensembles mean output has high entropy (ensemble more uncertain)
-- **Low entropy** means that the ensembles mean output has lower entropy (ensemble more confident)
+- **High entropy** indicates that individual models in the ensemble are uncertain about their predictions. 
+This could happen when the input is ambiguous or lies far from the training data distribution.
+- **Low entropy** indicates that individual models in the ensemble are confident in their predictions, even if they potentially disagree with each other.
 
 
 ### **Ensemble Mutual Information (Epistemic Uncertainty) (`ens/MI`)**
-Mutual information measures epistemic uncertainty, which arises due to a lack of knowledge in the model, typically caused by limited training data. It quantifies the disagreement among ensemble members beyond what is expected from aleatoric (data) uncertainty.
-
+Mutual information measures epistemic uncertainty in ensembles, which arises due to a lack of knowledge in the model, typically caused by limited training data. 
+It quantifies the disagreement among ensemble members beyond what is expected from aleatoric uncertainty.
 Mathematically, it is defined as:
-$$ \text{Mutual Information} = H(y|x) - \frac{1}{M} \sum_{i=1}^{M} H(y|x, \theta_i) $$
+$$ \text{Mutual Information} = H(y|x) - H_{ens}(y\mid x) $$
 
 where:
-- $H(y|x)$ is the **predictive entropy** (a.k.a. ensemble entropy, see above).
-- $H(y|x, \theta_i)$ is the entropy of each ensemble member’s prediction.
-
-#### **Intuition:**
-- The predictive entropy $H(y|x)$ can be thought of as the total uncertainty.
-- Average Individual Model Entropy $\frac{1}{M} \sum_{i=1}^{M} H(y|x, \theta_i)$ measures **only aleatoric uncertainty**: Each model in the ensemble makes a prediction. If all models in the ensemble are confident but predict different classes, the predictive entropy is high, but the individual model entropies are low.
+- $H(y|x)$ is the **predictive entropy** (see `Entropy`).
+- $H_{ens}(y|x)$ is the **ensemble entropy** (see `ens/Entropy`).
 
 #### **Intepretation** 
-- **High MI** corresponds to higher ensemble disargreement and epistemic uncertainty.
-- **Low MI** corresponds to lower ensemble disargreement and epistemic uncertainty.
+- **High MI** indicates that ensemble members disagree with each other more than they are individually uncertain about their own predictions. 
+This suggests that the multiple plausible models exist to explain the data, and that epistemic uncertainty is hight (e.g., due to limited training data or an out-of-distribution input).
+- **Zeor MI** are too uncertain individually to disagree.
