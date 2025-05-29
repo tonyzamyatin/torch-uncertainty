@@ -3,10 +3,12 @@ from collections.abc import Callable
 import torch.nn.functional as F
 from torch import Tensor, nn
 
+from torch_uncertainty.layers.batch_ensemble import BatchLinear
 from torch_uncertainty.layers.bayesian import BayesLinear
 from torch_uncertainty.layers.distributions import get_dist_linear_layer
 from torch_uncertainty.layers.packed import PackedLinear
 from torch_uncertainty.models import StochasticModel
+from torch_uncertainty.models.wrappers.batch_ensemble import BatchEnsemble
 
 __all__ = ["bayesian_mlp", "mlp", "packed_mlp"]
 
@@ -84,6 +86,10 @@ class _MLP(nn.Module):
         self.layers = layers
 
     def forward(self, x: Tensor) -> Tensor | dict[str, Tensor]:
+        # flatten if image (b, c, h, w) -> (b, c * h * w)
+        if x.ndim > 2:
+            x = x.view(x.size(0), -1)
+
         for layer in self.layers:
             x = F.dropout(layer(x), p=self.dropout_rate, training=self.training)
             x = self.activation(x)
@@ -91,17 +97,17 @@ class _MLP(nn.Module):
 
 
 def _mlp(
-    stochastic: bool,
     in_features: int,
     num_outputs: int,
     hidden_dims: list[int],
-    num_samples: int = 16,
     layer: type[nn.Module] = nn.Linear,
     layer_args: dict | None = None,
     activation: Callable = F.relu,
     dropout_rate: float = 0.0,
     dist_family: str | None = None,
     dist_args: dict | None = None,
+    stochastic: bool = False,
+    num_samples: int = 16,
 ) -> _MLP | StochasticModel:
     model = _MLP(
         in_features=in_features,
@@ -145,12 +151,12 @@ def mlp(
         _MLP: A Multi-Layer-Perceptron model.
     """
     return _mlp(
-        stochastic=False,
         in_features=in_features,
         num_outputs=num_outputs,
         hidden_dims=hidden_dims,
         activation=activation,
         dropout_rate=dropout_rate,
+        stochastic=False,
         dist_family=dist_family,
         dist_args=dist_args,
     )
@@ -174,7 +180,6 @@ def packed_mlp(
         "gamma": gamma,
     }
     return _mlp(
-        stochastic=False,
         in_features=in_features,
         num_outputs=num_outputs,
         hidden_dims=hidden_dims,
@@ -184,6 +189,7 @@ def packed_mlp(
         dropout_rate=dropout_rate,
         dist_family=dist_family,
         dist_args=dist_args,
+        stochastic=False,
     )
 
 
@@ -198,8 +204,6 @@ def bayesian_mlp(
     dist_args: dict | None = None,
 ) -> StochasticModel:
     return _mlp(
-        stochastic=True,
-        num_samples=num_samples,
         in_features=in_features,
         num_outputs=num_outputs,
         hidden_dims=hidden_dims,
@@ -208,4 +212,40 @@ def bayesian_mlp(
         dropout_rate=dropout_rate,
         dist_family=dist_family,
         dist_args=dist_args,
+        stochastic=True,
+        num_samples=num_samples,
+    )
+
+
+def batched_mlp(
+    in_features: int,
+    num_outputs: int,
+    hidden_dims: list[int],
+    num_estimators: int,
+    rank: int | str = 1,
+    gradient_blocking: bool = True,
+    activation: Callable = F.relu,
+    dropout_rate: float = 0.0,
+    dist_family: str | None = None,
+    dist_args: dict | None = None,
+) -> BatchEnsemble:
+    layer_args = {
+        "num_estimators": num_estimators,
+        "rank": rank,
+        "gradient_blocking": gradient_blocking,
+    }
+    return BatchEnsemble(
+        num_estimators=num_estimators,
+        model=_mlp(
+            in_features=in_features,
+            num_outputs=num_outputs,
+            hidden_dims=hidden_dims,
+            layer=BatchLinear,
+            activation=activation,
+            layer_args=layer_args,
+            dropout_rate=dropout_rate,
+            dist_family=dist_family,
+            dist_args=dist_args,
+            stochastic=False,
+        ),
     )

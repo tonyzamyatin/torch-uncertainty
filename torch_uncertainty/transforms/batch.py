@@ -24,6 +24,17 @@ class RepeatTarget(nn.Module):
         return inputs, targets.repeat(self.num_repeats, *[1] * (targets.ndim - 1))
 
 
+class FlattenImage(nn.Module):
+    def __init__(self) -> None:
+        """Flatten the image for training MLPs."""
+        super().__init__()
+
+    def forward(self, batch: tuple[Tensor, Tensor]) -> tuple[Tensor, Tensor]:
+        inputs, targets = batch
+        inputs = rearrange(inputs, "b c h w -> b (c h w)")
+        return inputs, targets
+
+
 class MIMOBatchFormat(nn.Module):
     def __init__(self, num_estimators: int, rho: float = 0.0, batch_repeat: int = 1) -> None:
         """Format the batch for MIMO training.

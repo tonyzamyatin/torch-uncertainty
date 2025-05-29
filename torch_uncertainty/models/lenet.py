@@ -125,8 +125,9 @@ def batchensemble_lenet(
     in_channels: int,
     num_classes: int,
     num_estimators: int = 4,
+    rank: int = 1,
     activation: Callable = F.relu,
-    norm: type[nn.Module] = nn.BatchNorm2d,
+    norm: type[nn.Module] = nn.Identity,
     groups: int = 1,
     dropout_rate: float = 0.0,
 ) -> _LeNet:
@@ -138,6 +139,7 @@ def batchensemble_lenet(
         conv2d_layer=BatchConv2d,
         layer_args={
             "num_estimators": num_estimators,
+            "rank": rank,
         },
         activation=activation,
         norm=norm,

@@ -1,3 +1,4 @@
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
@@ -352,10 +353,26 @@ class ClassificationRoutine(LightningModule):
 
     def on_train_start(self) -> None:
         """Put the hyperparameters in tensorboard."""
+        self.train_start_time = time.time()
+        num_params = sum(p.numel() for p in self.model.parameters())
         if self.logger is not None:  # coverage: ignore
             self.logger.log_hyperparams(
                 self.hparams,
             )
+            self.logger.experiment.add_scalar(
+                "num_trainable_params", num_params, self.current_epoch
+            )
+
+    def on_train_end(self) -> None:
+        train_duration = time.time() - self.train_start_time
+        self.logger.experiment.add_scalar(
+            "train_duration",
+            train_duration,
+            self.current_epoch,
+        )
+        # print the training duration in format "hh:mm:ss"
+        train_duration = time.strftime("%H:%M:%S", time.gmtime(train_duration))
+        print(f"Training duration: {train_duration}")
 
     def on_validation_start(self) -> None:
         """Prepare the validation step.

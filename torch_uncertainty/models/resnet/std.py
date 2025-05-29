@@ -286,17 +286,17 @@ class _ResNet(nn.Module):
                 normalization_layer=normalization_layer,
                 conv_bias=conv_bias,
             )
-            linear_multiplier = 8
+            self.linear_multiplier = 8
         else:
             self.layer4 = nn.Identity()
-            linear_multiplier = 4
+            self.linear_multiplier = 4
 
         self.final_dropout = nn.Dropout(p=dropout_rate)
         self.pool = nn.AdaptiveAvgPool2d(output_size=1)
         self.flatten = nn.Flatten(1)
 
         self.linear = nn.Linear(
-            block_planes * linear_multiplier * block.expansion,
+            block_planes * self.linear_multiplier * block.expansion,
             num_classes,
         )
 

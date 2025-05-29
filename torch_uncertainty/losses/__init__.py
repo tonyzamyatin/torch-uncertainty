@@ -6,5 +6,6 @@ from .classification import (
     ConflictualLoss,
     DECLoss,
     FocalLoss,
+    RepulsiveCrossEntropyLoss,
 )
 from .regression import BetaNLL, DERLoss, DistributionNLLLoss

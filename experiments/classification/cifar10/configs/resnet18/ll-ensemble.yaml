@@ -9,8 +9,8 @@ trainer:
   logger:
     class_path: lightning.pytorch.loggers.TensorBoardLogger
     init_args:
-      save_dir: logs/lenet
-      name: standard
+      save_dir: logs/resnet18
+      name: ensemble
       default_hp_metric: false
   callbacks:
   - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -27,33 +27,26 @@ trainer:
       patience: 1000
       check_finite: true
 model:
-  model:
-    class_path: torch_uncertainty.models.lenet._LeNet
-    init_args:
-      in_channels: 1
-      num_classes: 10
-      linear_layer: torch.nn.Linear
-      conv2d_layer: torch.nn.Conv2d
-      activation: torch.nn.ReLU
-      norm: torch.nn.Identity
-      groups: 1
-      dropout_rate: 0
-      last_layer_dropout: false
-      layer_args: {}
   num_classes: 10
+  in_channels: 3
   loss: CrossEntropyLoss
+  version: ll-ensemble
+  arch: 18
+  style: cifar
+  num_estimators: 4
 data:
   root: ./data
+  num_workers: 127
   batch_size: 128
+  eval_ood: true
+  eval_shift: true
 optimizer:
   lr: 0.05
   momentum: 0.9
   weight_decay: 5e-4
   nesterov: true
 lr_scheduler:
-  class_path: torch.optim.lr_scheduler.MultiStepLR
-  init_args:
-    milestones:
-    - 25
-    - 50
-    gamma: 0.1
+  milestones:
+  - 25
+  - 50
+  gamma: 0.1

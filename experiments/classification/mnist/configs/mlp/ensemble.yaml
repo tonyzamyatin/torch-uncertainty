@@ -6,12 +6,12 @@ trainer:
   accelerator: gpu
   devices: 1
   precision: 16-mixed
-  max_epochs: 10
+  max_epochs: 75
   logger:
     class_path: lightning.pytorch.loggers.TensorBoardLogger
     init_args:
-      save_dir: logs/lenet_trajectory
-      name: batch_ensemble
+      save_dir: logs/lenet
+      name: ensemble
       default_hp_metric: false
   callbacks:
   - class_path: lightning.pytorch.callbacks.ModelCheckpoint
@@ -25,28 +25,36 @@ trainer:
   - class_path: lightning.pytorch.callbacks.EarlyStopping
     init_args:
       monitor: val/cls/Acc
-      patience: 1000
+      mode: max
+      min_delta: 0.001
+      patience: 10
       check_finite: true
 model:  
   # ClassificationRoutine
   model:  
-    # BatchEnsemble
-    class_path: torch_uncertainty.models.lenet.batchensemble_lenet
+    # DeepEnsemble
+    class_path: torch_uncertainty.models.wrappers.deep_ensembles.deep_ensembles
     init_args:
-      in_channels: 1
-      num_classes: 10
-      num_estimators: 5
-      activation: torch.nn.ReLU
-      norm: torch.nn.BatchNorm2d
-      groups: 1
-      dropout_rate: 0
+      num_estimators: 4
+      task: classification
+      probabilistic: false
+      reset_model_parameters: true
+      models:  
+        # MlP
+        class_path: torch_uncertainty.models.mlp.mlp
+        init_args:
+          in_features: 784 # 28*28
+          num_outputs: 10
+          hidden_dims: [64, 32, 16]
+          activation: torch.nn.ReLU
+          dropout_rate: 0.05
   num_classes: 10
   loss: CrossEntropyLoss
   is_ensemble: true
   format_batch_fn:
     class_path: torch_uncertainty.transforms.batch.RepeatTarget
     init_args:
-      num_repeats: 5
+      num_repeats: 4
 data:
   root: ./data
   batch_size: 128
@@ -54,10 +62,19 @@ data:
   eval_ood: true
   eval_shift: true
 optimizer:
-  lr: 0.05
-  momentum: 0.9
-  weight_decay: 5e-4
-  nesterov: true
+  # SGD with momentum
+  # class_path: torch.optim.SGD
+  # init_args:
+  #   lr: 0.05
+  #   momentum: 0.9
+  #   weight_decay: 5e-4
+  #   nesterov: true
+  class_path: torch.optim.Adam
+  init_args:
+    lr: 0.001
+    weight_decay: 1e-4
+    betas: [0.9, 0.999]
+    eps: 1e-08
 lr_scheduler:
   class_path: torch.optim.lr_scheduler.MultiStepLR
   init_args:

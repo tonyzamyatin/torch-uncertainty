@@ -1,4 +1,3 @@
-import lightning.pytorch as pl
 import torch
 from lightning.pytorch.cli import LightningArgumentParser
 
@@ -10,7 +9,8 @@ from torch_uncertainty.routines import ClassificationRoutine
 class MNISTCLI(TULightningCLI):
     def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
         super().add_arguments_to_parser(parser)
-        parser.add_optimizer_args(torch.optim.SGD)
+        # parser.add_optimizer_args(torch.optim.Adam)
+        # parser.add_lr_scheduler_args(torch.optim.lr_scheduler.MultiStepLR)
 
 
 def cli_main() -> MNISTCLI:
@@ -19,7 +19,6 @@ def cli_main() -> MNISTCLI:
 
 if __name__ == "__main__":
     torch.set_float32_matmul_precision("medium")
-    pl.seed_everything(42)
 
     cli = cli_main()
     if (

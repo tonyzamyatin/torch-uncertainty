@@ -1,5 +1,7 @@
 # ruff: noqa: F401, F403
 from .batched import batched_resnet
+from .ll_batched import ll_batched_resnet
+from .ll_ensemble import ll_ensemble_resnet
 from .lpbnn import lpbnn_resnet
 from .masked import masked_resnet
 from .mimo import mimo_resnet

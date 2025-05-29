@@ -88,7 +88,7 @@ class CIFAR10C(VisionDataset):
         transform: Callable | None = None,
         target_transform: Callable | None = None,
         subset: str = "all",
-        shift_severity: int = 1,
+        shift_severity: int = 5,
         download: bool = False,
     ) -> None:
         self.root = Path(root)

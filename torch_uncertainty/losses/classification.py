@@ -355,3 +355,93 @@ class BCEWithLogitsLSLoss(nn.BCEWithLogitsLoss):
         if self.reduction == "sum":
             return -loss.sum()
         return -loss
+
+
+class RepulsiveCrossEntropyLoss(nn.Module):
+    def __init__(
+        self,
+        num_estimators: int,
+        beta: float = None,
+        h: float = None,
+        dist: str = "l2",
+        reduction: str = "mean",
+    ) -> None:
+        """Combines standard cross-entropy with KDE-based repulsion in function space.
+
+        The additive KDE-based repulsion loss term encourages diversity in the outputs
+        of ensemble members by penalizing the similarity of their predictions via an
+        RBF kernel in function space
+
+        Args:
+            num_estimators (int): Number of ensemble members.
+            beta (float): Factor of the repulsive term, per default set to 1/M(M -1).
+            h (float): Lengthsacle for the RBF kernel, per default determined via median heuristic.
+            dist (str): Distance metric for repulsion ('l1' or 'l2').
+            reduction (str): Reduction method for CE loss.
+
+        Reference:
+            D'Angelo, F., & Fortuin, V. (2021). Repulsive deep ensembles are bayesian.
+            Advances in Neural Information Processing Systems, 34, 3451-3465.
+        """
+        super().__init__()
+        self.num_estimators = num_estimators
+        self.h = h
+        self.beta = beta if beta is not None else 1 / (num_estimators * (num_estimators - 1))
+        self.dist = dist
+
+        if dist not in ["l1", "l2"]:
+            raise ValueError(f"Distance metric '{dist}' is not supported. Use 'l1' or 'l2'.")
+
+        self.ce_loss = nn.CrossEntropyLoss(reduction=reduction)
+        self.num_estimators = num_estimators
+
+    def _repulsion_term(self, logits: torch.Tensor) -> torch.Tensor:
+        """Args:
+            logits: Tensor of shape (M * B, C), with M = num_estimators, B = batch size.
+
+        Returns:
+            Scalar repulsion loss.
+        """
+        M = self.num_estimators
+        B = logits.size(0) // M
+        C = logits.size(1)
+        logits = logits.view(M, B, C)
+
+        # Mask out self-similarities (diagonal) and compute mean pairwise similarity
+        mask = ~torch.eye(M, dtype=bool, device=logits.device)
+
+        # Compute function outputs: typically use softmax for classification
+        probs = F.softmax(logits, dim=-1)
+
+        # Flatten each model's output over the batch: (M, B*C)
+        proj = probs.view(M, -1)
+
+        # Compute pairwise squared distances (M, M)
+        pow = 2 if self.dist == "l2" else 1
+        dists = torch.cdist(proj, proj, p=2).pow(pow)
+
+        h = self.h
+        if h is None:
+            # Set h to the median distance between all pairs of models
+            h = torch.median(dists[mask])
+
+        # Compute RBF kernel matrix (M, M)
+        kernel = torch.exp(-dists / h)
+
+        repulsion = kernel[mask].sum()
+
+        return self.beta * repulsion
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """Args:
+        logits: Tensor of shape (M * B, C)
+        targets: Tensor of shape (M * B) or (B), repeated if needed
+        """
+        # Compute CE loss per sample
+        ce = self.ce_loss(logits, targets)
+
+        # Add repulsion loss
+        repulsion = self._repulsion_term(logits)
+
+        total_loss = ce + repulsion
+        return total_loss

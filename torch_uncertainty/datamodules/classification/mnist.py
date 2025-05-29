@@ -27,6 +27,7 @@ class MNISTDataModule(TUDataModule):
         batch_size: int,
         eval_ood: bool = False,
         eval_shift: bool = False,
+        shift_severity: int = 1,
         ood_ds: Literal["fashion", "notMNIST"] = "fashion",
         val_split: float | None = None,
         num_workers: int = 1,
@@ -69,6 +70,7 @@ class MNISTDataModule(TUDataModule):
 
         self.eval_ood = eval_ood
         self.eval_shift = eval_shift
+        self.shift_severity = shift_severity
         self.batch_size = batch_size
 
         self.dataset = MNIST
@@ -164,6 +166,7 @@ class MNISTDataModule(TUDataModule):
                 self.root,
                 download=False,
                 transform=self.test_transform,
+                shift_severity=self.shift_severity,
             )
 
     def test_dataloader(self) -> list[DataLoader]:

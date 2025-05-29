@@ -173,17 +173,23 @@ Measures the error rate when retaining **80% of samples**.
 These metrics quantify uncertainty in ensemble models by measuring disagreement and confidence dispersion.
 
 ### **Ensemble Disagreement (`ens/Disagreement`)**
-Measures how often different ensemble members predict different classes for the same input. Therefore, it is an indirect measure of ensemble diversity.
+Measures the disagreement among ensemble members by calculating how often different members predict different classes for the same input.
 
-$$ \text{Disagreement} = 1 - \frac{1}{M} \sum_{i=1}^{M} \max_{c} p_i(y = c) $$
+For each sample $i$, the disagreement is calculated as:
+
+$$ D_i = 1 - \frac{\sum_{c=1}^{C} {n_{i,c} \choose 2}}{{N \choose 2}} $$
 
 where:
-- $M$ is the number of ensemble members.
-- $p_i(y = c)$ is the probability assigned by the $i$-th ensemble member to class $c$.
+- $N$ is the number of ensemble members (estimators)
+- $n_{i,c}$ is the number of estimators that predicted class $c$ for sample $i$
+- ${n_{i,c} \choose 2} = \frac{n_{i,c}(n_{i,c}-1)}{2}$ is the number of pairs of estimators that agree on class $c$
+- ${N \choose 2} = \frac{N(N-1)}{2}$ is the total number of possible pairs of estimators
 
-#### **Intepretation** 
-- **High disagreement** means ensemble members predict different classes (indicating high uncertainty).
-- **Low disagreement** means ensemble members confidently predict the same class.
+#### **Interpretation** 
+- **High disagreement** means ensemble members predict different classes (indicating high uncertainty)
+- **Low disagreement** means ensemble members agree on their predictions (indicating low uncertainty)
+- A value of 0 means perfect agreement (all estimators predict the same class)
+- A value of 1 means complete disagreement (estimators are maximally divided in their predictions)
 
 ### **Ensemble Entropy (Predictive Entropy) (`ens/Entropy`)**
 Measures the entropy of the average predictive distribution of the ensemble.

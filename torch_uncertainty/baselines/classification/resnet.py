@@ -6,6 +6,8 @@ from torch.optim import Optimizer
 from torch_uncertainty.models import mc_dropout
 from torch_uncertainty.models.resnet import (
     batched_resnet,
+    ll_batched_resnet,
+    ll_ensemble_resnet,
     lpbnn_resnet,
     masked_resnet,
     mimo_resnet,
@@ -22,6 +24,8 @@ ENSEMBLE_METHODS = [
     "masked",
     "mc-dropout",
     "mimo",
+    "ll-batched",
+    "ll-ensemble",
 ]
 
 
@@ -63,6 +67,8 @@ class ResNetBaseline(ClassificationRoutine):
         num_estimators (int, optional): Number of estimators in the ensemble.
             Only used if :attr:`version` is either ``"packed"``, ``"batched"``,
             ``"masked"`` or ``"mc-dropout"`` Defaults to ``None``.
+        rank (int, optional): Rank of the estimators. Only used if
+            :attr:`version` is ``"batched"``. Defaults to ``1``.
         dropout_rate (float, optional): Dropout rate. Defaults to ``0.0``.
         mixup_params (dict, optional): Mixup parameters. Can include mixtype,
             mixmode, dist_sim, kernel_tau_max, kernel_tau_std,
@@ -133,6 +139,8 @@ class ResNetBaseline(ClassificationRoutine):
         "masked": masked_resnet,
         "mimo": mimo_resnet,
         "mc-dropout": resnet,
+        "ll-batched": ll_batched_resnet,
+        "ll-ensemble": ll_ensemble_resnet,
     }
     archs = [18, 20, 34, 44, 50, 56, 101, 110, 152, 1202]
 
@@ -149,11 +157,14 @@ class ResNetBaseline(ClassificationRoutine):
             "lpbnn",
             "masked",
             "mimo",
+            "ll-batched",
+            "ll-ensemble",
         ],
         arch: int,
         style: str = "imagenet",
         normalization_layer: type[nn.Module] = nn.BatchNorm2d,
         num_estimators: int = 1,
+        rank: int = 1,
         dropout_rate: float = 0.0,
         optim_recipe: dict | Optimizer | None = None,
         mixup_params: dict | None = None,
@@ -206,6 +217,11 @@ class ResNetBaseline(ClassificationRoutine):
                 "alpha": alpha,
                 "gamma": gamma,
                 "pretrained": pretrained,
+            }
+
+        if version in ["batched", "ll-batched"]:
+            params |= {
+                "rank": rank,
             }
 
         elif version == "masked":

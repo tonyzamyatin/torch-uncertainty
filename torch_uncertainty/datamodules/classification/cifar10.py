@@ -30,7 +30,7 @@ class CIFAR10DataModule(TUDataModule):
         batch_size: int,
         eval_ood: bool = False,
         eval_shift: bool = False,
-        shift_severity: int = 1,
+        shift_severity: int = 5,
         val_split: float | None = None,
         num_workers: int = 1,
         basic_augment: bool = True,
@@ -62,7 +62,7 @@ class CIFAR10DataModule(TUDataModule):
             auto_augment (str): Which auto-augment to apply. Defaults to ``None``.
             test_alt (str): Which test set to use. Defaults to ``None``.
             shift_severity (int): Severity of corruption to apply for
-                CIFAR10-C. Defaults to ``1``.
+                CIFAR10-C. Defaults to ``5``.
             num_dataloaders (int): Number of dataloaders to use. Defaults to ``1``.
             pin_memory (bool): Whether to pin memory. Defaults to ``True``.
             persistent_workers (bool): Whether to use persistent workers. Defaults
